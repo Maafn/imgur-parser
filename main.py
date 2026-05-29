@@ -1,64 +1,51 @@
-import string
 import random
-import os
-import shutil
+import string
+from pathlib import Path
+
 import requests
 
-noneWorking = [0, 503, 4939, 4940, 4941, 12003, 5556, 5082]
+desktop = Path.home() / 'Desktop' / 'Pictures_From_IMGUR'
+desktop.mkdir(parents=True, exist_ok=True)
 
-userhome = os.path.expanduser('~')
-desktop = userhome + '/Desktop/Pictures_From_IMGUR/'
+session = requests.Session()
 
-if not os.path.exists(desktop):
-    os.makedirs(desktop)
+headers = {
+    'User-Agent': 'Mozilla/5.0'
+}
 
-def main():
-    while True:
-        amount = int(''.join(random.choice('5' + '6') for _ in range(1)))
-        if amount == 6:
-            N = 3
-            picture = str(''.join(random.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(N)))
-            picture2 = str(''.join(random.choice(string.digits + string.ascii_lowercase) for _ in range(N)))
-            name = picture + picture2
+while True:
+    image_id = ''.join(
+        random.choice(string.ascii_letters + string.digits)
+        for _ in range(random.choice([5, 6]))
+    )
 
-            printsc = "http://i.imgur.com/" + "" + str(picture) + str(picture2) + ".jpg"
-            line = str(name) + ".jpg"
+    url = f'https://i.imgur.com/{image_id}.jpg'
 
-            response = requests.get(printsc, stream=True)
+    try:
+        response = session.get(
+            url,
+            headers=headers,
+            timeout=10,
+            stream=True
+        )
 
-            with open(desktop + line, 'wb') as out_file:
-                shutil.copyfileobj(response.raw, out_file)
+        if response.status_code != 200:
+            print(f'[-] Invalid: {image_id}')
+            continue
 
-            size = os.path.getsize(desktop + line)
+        content_type = response.headers.get('Content-Type', '')
 
-            if size in noneWorking:
-                print ("[-] Invalid: " + str(name))
-                os.remove(desktop + line)
-            else:
-                print ("[+] Valid: " + printsc)
-        if amount == 5:
-            N = 5
+        if 'image' not in content_type:
+            print(f'[-] Not image: {image_id}')
+            continue
 
-            picture = str(''.join(
-                random.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(N)))
-            name = picture
+        file_path = desktop / f'{image_id}.jpg'
 
-            printsc = "http://i.imgur.com/" + "" + str(picture) + ".jpg"
-            line = str(name) + ".jpg"
+        with open(file_path, 'wb') as file:
+            for chunk in response.iter_content(8192):
+                file.write(chunk)
 
-            response = requests.get(printsc, stream=True)
+        print(f'[+] Valid: {url}')
 
-            with open(desktop + line, 'wb') as out_file:
-                shutil.copyfileobj(response.raw, out_file)
-
-            size = os.path.getsize(desktop + line)
-
-            if size in noneWorking:
-                print("[-] Invalid: " + str(name))
-                os.remove(desktop + line)
-            else:
-                print("[+] Valid: " + printsc)
-
-
-if __name__ == '__main__':
-    main()
+    except requests.RequestException as error:
+        print(f'[!] Error: {error}')
