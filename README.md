@@ -1,3 +1,2 @@
-This code allows you to <b>parse</b> and <b>download</b> images from imgur.com <br>
-
-<b>For Python 3</b>
+This code allows you to parse images from imgur.com <br>
+<b>For Python 3.14.5</b>
